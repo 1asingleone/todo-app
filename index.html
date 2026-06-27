@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的待办</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f0f5ff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(59, 130, 246, 0.10);
+      padding: 32px 28px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 24px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .input-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 16px;
+      border: 2px solid #e0e7ff;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus {
+      border-color: #3b82f6;
+    }
+
+    .custom-select {
+      position: relative;
+    }
+
+    .select-trigger {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 12px;
+      border: 2px solid #e0e7ff;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+      color: #1e293b;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .select-trigger:hover {
+      border-color: #3b82f6;
+    }
+
+    .custom-select.open .select-trigger {
+      border-color: #3b82f6;
+    }
+
+    .select-value {
+      flex: 1;
+      text-align: center;
+    }
+
+    .select-arrow {
+      font-size: 10px;
+      color: #94a3b8;
+      transition: transform 0.2s;
+    }
+
+    .custom-select.open .select-arrow {
+      transform: rotate(180deg);
+    }
+
+    .select-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .select-option {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      color: #1e293b;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.1s;
+    }
+
+    .select-option:hover {
+      background: #f0f5ff;
+    }
+
+    .select-option.selected {
+      color: #3b82f6;
+      font-weight: 600;
+      background: #eff6ff;
+    }
+
+    .input-row .add-btn {
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+    }
+
+    .input-row .add-btn:hover {
+      background: #2563eb;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eef2ff;
+    }
+
+    .stats .counts span {
+      font-weight: 600;
+      color: #1e40af;
+    }
+
+    .clear-all-btn {
+      background: none;
+      border: 1px solid #fca5a5;
+      color: #ef4444;
+      font-size: 13px;
+      padding: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .clear-all-btn:hover {
+      background: #fef2f2;
+    }
+
+    .clear-all-btn.hidden {
+      display: none;
+    }
+
+    .filters {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eef2ff;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-row + .filter-row {
+      margin-top: 8px;
+    }
+
+    .filter-btn {
+      padding: 5px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      background: #fff;
+      color: #64748b;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    .filter-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+
+    .filter-btn.category-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+
+    .todo-list {
+      list-style: none;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .todo-item:last-child {
+      border-bottom: none;
+    }
+
+    .todo-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #3b82f6;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .tag-priority, .tag-category {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: #fff;
+      flex-shrink: 0;
+      line-height: 1.5;
+    }
+
+    .tag-priority.high { background: #ef4444; }
+    .tag-priority.medium { background: #f59e0b; }
+    .tag-priority.low { background: #22c55e; }
+
+    .tag-category.general { background: #6b7280; }
+    .tag-category.work { background: #8b5cf6; }
+    .tag-category.life { background: #06b6d4; }
+    .tag-category.study { background: #f97316; }
+
+    .todo-item .text {
+      flex: 1;
+      font-size: 15px;
+      color: #1e293b;
+      word-break: break-word;
+      cursor: pointer;
+    }
+
+    .todo-item .text.completed {
+      text-decoration: line-through;
+      color: #94a3b8;
+    }
+
+    .edit-input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .todo-item .icon-btn {
+      background: none;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+      color: #94a3b8;
+    }
+
+    .todo-item .icon-btn:hover {
+      background: #f1f5f9;
+      color: #3b82f6;
+    }
+
+    .todo-item .delete-btn {
+      background: none;
+      border: none;
+      color: #f87171;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .todo-item .delete-btn:hover {
+      background: #fef2f2;
+    }
+
+    .empty-friendly {
+      text-align: center;
+      padding: 48px 16px 32px;
+      color: #94a3b8;
+    }
+
+    .empty-friendly .title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .empty-friendly .sub {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 24px 16px;
+        border-radius: 12px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .input-row {
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .input-row input {
+        font-size: 14px;
+        padding: 8px 12px;
+        min-width: 100%;
+        order: -1;
+      }
+
+      .custom-select {
+        flex: 1;
+      }
+
+      .select-trigger {
+        font-size: 13px;
+        padding: 8px 6px;
+      }
+
+      .input-row .add-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+        flex: 1;
+      }
+
+      .stats {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .filter-row {
+        gap: 4px;
+      }
+
+      .filter-btn {
+        font-size: 12px;
+        padding: 4px 10px;
+      }
+
+      .todo-item .text {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>我的待办</h1>
+
+      <div class="input-row">
+        <input type="text" id="todoInput" placeholder="输入待办事项..." autofocus>
+        <div class="custom-select" id="prioritySelect">
+          <button class="select-trigger" type="button">
+            <span class="select-value">中</span>
+            <span class="select-arrow">&#9662;</span>
+          </button>
+          <div class="select-dropdown"></div>
+        </div>
+        <div class="custom-select" id="categorySelect">
+          <button class="select-trigger" type="button">
+            <span class="select-value">通用</span>
+            <span class="select-arrow">&#9662;</span>
+          </button>
+          <div class="select-dropdown"></div>
+        </div>
+        <button class="add-btn" id="addBtn">添加</button>
+      </div>
+
+      <div class="stats">
+        <div class="counts">
+          未完成: <span id="incompleteCount">0</span> &nbsp;|&nbsp; 总计: <span id="totalCount">0</span>
+        </div>
+        <button class="clear-all-btn hidden" id="clearAllBtn">全部清空</button>
+      </div>
+
+      <div class="filters">
+        <div class="filter-row">
+          <button class="filter-btn" data-filter="all">全部</button>
+          <button class="filter-btn" data-filter="incomplete">未完成</button>
+          <button class="filter-btn" data-filter="completed">已完成</button>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn priority-btn" data-priority="all">全部</button>
+          <button class="filter-btn priority-btn" data-priority="high">高</button>
+          <button class="filter-btn priority-btn" data-priority="medium">中</button>
+          <button class="filter-btn priority-btn" data-priority="low">低</button>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn category-btn" data-category="all">全部</button>
+          <button class="filter-btn category-btn" data-category="general">通用</button>
+          <button class="filter-btn category-btn" data-category="work">工作</button>
+          <button class="filter-btn category-btn" data-category="life">生活</button>
+          <button class="filter-btn category-btn" data-category="study">学习</button>
+        </div>
+      </div>
+
+      <ul class="todo-list" id="todoList"></ul>
+
+      <div class="empty-friendly" id="emptyMsg">
+        <div class="title" id="emptyTitle">还没有待办事项</div>
+        <div class="sub" id="emptySub">在上方输入内容，开始管理你的任务吧</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'todos';
+
+    let todos = loadTodos();
+    let editingId = null;
+    let activeFilter = 'all';
+    let activeCategory = 'all';
+    let activePriority = 'all';
+
+    const todoInput = document.getElementById('todoInput');
+    const prioritySelectEl = document.getElementById('prioritySelect');
+    const categorySelectEl = document.getElementById('categorySelect');
+    const addBtn = document.getElementById('addBtn');
+    const todoList = document.getElementById('todoList');
+    const emptyMsg = document.getElementById('emptyMsg');
+    const emptyTitle = document.getElementById('emptyTitle');
+    const emptySub = document.getElementById('emptySub');
+    const incompleteCount = document.getElementById('incompleteCount');
+    const totalCount = document.getElementById('totalCount');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+
+    const tagMap = { high: '高', medium: '中', low: '低' };
+    const catMap = { general: '通用', work: '工作', life: '生活', study: '学习' };
+
+    function createCustomSelect(container, options, defaultVal) {
+      let currentVal = defaultVal;
+      const trigger = container.querySelector('.select-trigger');
+      const valueEl = container.querySelector('.select-value');
+      const dropdown = container.querySelector('.select-dropdown');
+
+      dropdown.innerHTML = options.map(o =>
+        `<button class="select-option${o.value === defaultVal ? ' selected' : ''}" data-value="${o.value}">${o.label}</button>`
+      ).join('');
+
+      trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        if (container.classList.contains('open')) {
+          container.classList.remove('open');
+          dropdown.style.display = 'none';
+        } else {
+          closeAllDropdowns();
+          container.classList.add('open');
+          dropdown.style.display = 'block';
+        }
+      });
+
+      dropdown.addEventListener('click', e => e.stopPropagation());
+
+      dropdown.querySelectorAll('.select-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentVal = btn.dataset.value;
+          valueEl.textContent = btn.textContent;
+          dropdown.querySelectorAll('.select-option').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          container.classList.remove('open');
+          dropdown.style.display = 'none';
+        });
+      });
+
+      return {
+        getValue: () => currentVal,
+        setValue: val => {
+          currentVal = val;
+          const opt = dropdown.querySelector(`.select-option[data-value="${val}"]`);
+          if (opt) {
+            valueEl.textContent = opt.textContent;
+            dropdown.querySelectorAll('.select-option').forEach(b => b.classList.remove('selected'));
+            opt.classList.add('selected');
+          }
+        }
+      };
+    }
+
+    function closeAllDropdowns() {
+      document.querySelectorAll('.custom-select.open').forEach(el => {
+        el.classList.remove('open');
+        el.querySelector('.select-dropdown').style.display = 'none';
+      });
+    }
+
+    document.addEventListener('click', closeAllDropdowns);
+
+    const prioritySelect = createCustomSelect(prioritySelectEl, [
+      { value: 'low', label: '低' },
+      { value: 'medium', label: '中' },
+      { value: 'high', label: '高' }
+    ], 'medium');
+
+    const categorySelect = createCustomSelect(categorySelectEl, [
+      { value: 'general', label: '通用' },
+      { value: 'work', label: '工作' },
+      { value: 'life', label: '生活' },
+      { value: 'study', label: '学习' }
+    ], 'general');
+
+    function loadTodos() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveTodos() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    function addTask() {
+      const text = todoInput.value.trim();
+      if (!text) return;
+
+      todos.push({
+        id: Date.now(),
+        text,
+        completed: false,
+        priority: prioritySelect.getValue(),
+        category: categorySelect.getValue()
+      });
+
+      todoInput.value = '';
+      todoInput.focus();
+      prioritySelect.setValue('medium');
+      categorySelect.setValue('general');
+      activeFilter = 'all';
+      activeCategory = 'all';
+      activePriority = 'all';
+      saveTodos();
+      render();
+    }
+
+    function toggleTask(id) {
+      const todo = todos.find(t => t.id === id);
+      if (todo) {
+        todo.completed = !todo.completed;
+        saveTodos();
+        render();
+      }
+    }
+
+    function deleteTask(id) {
+      todos = todos.filter(t => t.id !== id);
+      saveTodos();
+      if (editingId === id) editingId = null;
+      render();
+    }
+
+    function editTask(id) {
+      editingId = id;
+      render();
+      const input = document.querySelector(`.edit-input[data-id="${id}"]`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function saveEdit(id) {
+      const input = document.querySelector(`.edit-input[data-id="${id}"]`);
+      if (!input) return;
+
+      const text = input.value.trim();
+      if (!text) {
+        editingId = null;
+        render();
+        return;
+      }
+
+      const todo = todos.find(t => t.id === id);
+      if (todo) {
+        todo.text = text;
+        saveTodos();
+      }
+      editingId = null;
+      render();
+    }
+
+    function cancelEdit(id) {
+      editingId = null;
+      render();
+    }
+
+    function clearAll() {
+      if (todos.length === 0) return;
+      if (confirm('确定要清空所有待办事项吗？')) {
+        todos = [];
+        editingId = null;
+        activeFilter = 'all';
+        activeCategory = 'all';
+        activePriority = 'all';
+        saveTodos();
+        render();
+      }
+    }
+
+    function setFilter(filter) {
+      activeFilter = filter;
+      render();
+    }
+
+    function setCategory(category) {
+      activeCategory = category;
+      render();
+    }
+
+    function setPriority(priority) {
+      activePriority = priority;
+      render();
+    }
+
+    function render() {
+      const incomplete = todos.filter(t => !t.completed).length;
+      const total = todos.length;
+
+      incompleteCount.textContent = incomplete;
+      totalCount.textContent = total;
+      clearAllBtn.classList.toggle('hidden', total === 0);
+
+      // Update filter button states
+      document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === activeFilter);
+      });
+      document.querySelectorAll('.filter-btn[data-category]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === activeCategory);
+      });
+      document.querySelectorAll('.filter-btn[data-priority]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.priority === activePriority);
+      });
+
+      // Apply filters
+      let filtered = todos;
+      if (activeFilter === 'incomplete') filtered = filtered.filter(t => !t.completed);
+      if (activeFilter === 'completed') filtered = filtered.filter(t => t.completed);
+      if (activeCategory !== 'all') filtered = filtered.filter(t => t.category === activeCategory);
+      if (activePriority !== 'all') filtered = filtered.filter(t => t.priority === activePriority);
+
+      // Empty state
+      if (filtered.length === 0) {
+        todoList.innerHTML = '';
+        if (total === 0) {
+          emptyTitle.textContent = '还没有待办事项';
+          emptySub.textContent = '在上方输入内容，开始管理你的任务吧';
+        } else {
+          emptyTitle.textContent = '没有符合条件的待办事项';
+          emptySub.textContent = '试试切换其他筛选条件';
+        }
+        emptyMsg.style.display = 'block';
+        return;
+      }
+
+      emptyMsg.style.display = 'none';
+
+      todoList.innerHTML = filtered.map(t => {
+        const isEditing = editingId === t.id;
+        const tag = tagMap[t.priority] || '中';
+        const cat = catMap[t.category] || '通用';
+
+        if (isEditing) {
+          return `
+            <li class="todo-item" data-id="${t.id}">
+              <input type="checkbox" ${t.completed ? 'checked' : ''}>
+              <span class="tag-priority ${t.priority}">${tag}</span>
+              <span class="tag-category ${t.category}">${cat}</span>
+              <input class="edit-input" data-id="${t.id}" value="${escapeHtml(t.text)}">
+              <button class="icon-btn save-btn" data-id="${t.id}">保存</button>
+            </li>
+          `;
+        }
+
+        return `
+          <li class="todo-item" data-id="${t.id}">
+            <input type="checkbox" ${t.completed ? 'checked' : ''}>
+            <span class="tag-priority ${t.priority}">${tag}</span>
+            <span class="tag-category ${t.category}">${cat}</span>
+            <span class="text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>
+            <button class="icon-btn edit-btn" data-id="${t.id}">编辑</button>
+            <button class="delete-btn" data-id="${t.id}">&times;</button>
+          </li>
+        `;
+      }).join('');
+
+      todoList.querySelectorAll('.todo-item').forEach(li => {
+        const id = Number(li.dataset.id);
+        const cb = li.querySelector('input[type="checkbox"]');
+
+        if (editingId === id) {
+          const saveBtn = li.querySelector('.save-btn');
+          const editInput = li.querySelector('.edit-input');
+
+          if (editInput) {
+            editInput.addEventListener('keydown', e => {
+              if (e.key === 'Enter') saveEdit(id);
+              if (e.key === 'Escape') cancelEdit(id);
+            });
+            editInput.addEventListener('blur', () => saveEdit(id));
+          }
+          if (saveBtn) {
+            saveBtn.addEventListener('click', () => saveEdit(id));
+          }
+        } else {
+          const editBtn = li.querySelector('.edit-btn');
+          const delBtn = li.querySelector('.delete-btn');
+
+          cb.addEventListener('change', () => toggleTask(id));
+          if (editBtn) editBtn.addEventListener('click', () => editTask(id));
+          if (delBtn) delBtn.addEventListener('click', () => deleteTask(id));
+        }
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    addBtn.addEventListener('click', addTask);
+    todoInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+    clearAllBtn.addEventListener('click', clearAll);
+
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+    });
+    document.querySelectorAll('.filter-btn[data-category]').forEach(btn => {
+      btn.addEventListener('click', () => setCategory(btn.dataset.category));
+    });
+    document.querySelectorAll('.filter-btn[data-priority]').forEach(btn => {
+      btn.addEventListener('click', () => setPriority(btn.dataset.priority));
+    });
+
+    // Set initial "all" buttons as active
+    document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+    document.querySelector('.filter-btn[data-category="all"]').classList.add('active');
+    document.querySelector('.filter-btn[data-priority="all"]').classList.add('active');
+
+    render();
+  </script>
+</body>
+</html>
